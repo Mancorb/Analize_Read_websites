@@ -1,5 +1,6 @@
 from newspaper import Article
 from re import split
+from transformers import pipeline
 
 cnn = "https://edition.cnn.com/2025/05/21/africa/trump-resettling-south-africas-afrikaners-intl"
 APnws = "https://apnews.com/article/trump-syria-saudi-arabia-sharaa-assad-sanctions-bb208f25cfedecd6446fd1626012c0fb"
@@ -38,3 +39,10 @@ def extract_information(url):
     return (title, phrases_list)
 
 
+classifier = pipeline('text-classification', model='michellejieli/emotion_text_classifier')
+
+title, text_lst = extract_information(cnn)
+
+res = classifier(text_lst[1])
+
+print(res)
