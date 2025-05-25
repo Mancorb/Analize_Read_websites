@@ -1,6 +1,6 @@
 from newspaper import Article
+from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 from re import split
-from transformers import pipeline
 
 cnn = "https://edition.cnn.com/2025/05/21/africa/trump-resettling-south-africas-afrikaners-intl"
 APnws = "https://apnews.com/article/trump-syria-saudi-arabia-sharaa-assad-sanctions-bb208f25cfedecd6446fd1626012c0fb"
@@ -38,11 +38,33 @@ def extract_information(url):
 
     return (title, phrases_list)
 
+location = "./light_emotion_model"
 
-classifier = pipeline('text-classification', model='michellejieli/emotion_text_classifier')
+model = AutoModelForSequenceClassification.from_pretrained(location)
+tokenizer = AutoTokenizer.from_pretrained(location)
 
 title, text_lst = extract_information(cnn)
 
-res = classifier(text_lst[1])
 
-print(res)
+classifier = pipeline("text-classification",
+                      model=model,
+                      tokenizer=tokenizer)
+
+
+result = classifier(text_lst[2])
+
+print(f"Test:\n{text_lst[2]}\n\nPrediction:\n{result}")
+
+
+""" 
+tags = {
+"anger" : ["loud","fast","high"],
+"fear" : ["medium","fast","high"],
+"joy" : ["medium","fast","high"],
+"sadness" : ["low","slow","low"],
+"neutral" : ["medium","medium","medium"],
+"disgust" : ["low","slow","low"],
+"surprise" : ["loud","fast","high"]
+}
+
+ """
