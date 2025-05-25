@@ -3,18 +3,21 @@ from transformers import pipeline, AutoModelForSequenceClassification, AutoToken
 from re import split
 from random import randint
 
-cnn = "https://edition.cnn.com/2025/05/21/africa/trump-resettling-south-africas-afrikaners-intl"
-APnws = "https://apnews.com/article/trump-syria-saudi-arabia-sharaa-assad-sanctions-bb208f25cfedecd6446fd1626012c0fb"
-wiki = "https://en.wikipedia.org/wiki/International_System_of_Units"
-
 class Text_tagger ():
     def __init__(self, url, limit_counter=-1):
        
         self.url = url
         self.limit_counter = limit_counter
         self.location = "./light_emotion_model"
-        self.model = AutoModelForSequenceClassification.from_pretrained(self.location)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.location)
+
+        try:
+
+            self.model = AutoModelForSequenceClassification.from_pretrained(self.location)
+            self.tokenizer = AutoTokenizer.from_pretrained(self.location)
+        except Exception as e:
+            raise RuntimeError(f"Error loading model/tokenizer from {self.location}: {e}")
+
+
         self.title = "Template"
         self.tags = {
                 "anger" : ["loud","fast","high"],
@@ -26,10 +29,12 @@ class Text_tagger ():
                 "surprise" : ["loud","fast","high"]
                 }
         
-        
-        self._extract_information()
-        self.labeled_text = self._process_information()
-        self._export()
+        try:
+            self._extract_information()
+            self.labeled_text = self._process_information()
+            self._export()
+        except Exception as e:
+            raise RuntimeError(f"Processing failed: {e}")
         
 
     def _extract_information(self):
@@ -65,6 +70,11 @@ class Text_tagger ():
 
 
     def _process_information(self):
+        """Extract and return tokenized text with apropriate labels
+
+        Returns:
+            string: resulting text with labels included
+        """
 
         #obtain general information of the page
         title, text_lst = self._extract_information()
@@ -103,7 +113,33 @@ class Text_tagger ():
 
 
     def _export(self):
-        with open(self.title, "w", encoding="utf-8") as file:
-            file.write(self.labeled_text)
+        """Export the results to a txt file
 
-Text_tagger(cnn, 3)
+        Raises:
+            RuntimeError: Error in case of failure
+        """
+        try:
+            with open(self.title, "w", encoding="utf-8") as file:
+                file.write(self.labeled_text)
+        except Exception as e:
+            raise RuntimeError(f"Text classification failed {e}")
+
+if __name__ == "__main__":
+    while True:
+        try:
+            url =  input("[+] Please paste the url of the website to scrap:\n->")
+            limit = int(input("[+] Limit? (None is default)\n->"))
+
+            if not limit or limit < 0:
+                limit = -1
+
+            print("[+] Begining Process...")
+
+            Text_tagger(url, limit)
+
+            print("[+] Process complete!!\n\n")
+
+        except Exception as e:
+            print(f"[!] Error\n{e}\n\n_______________________________\nTry again....\n\n\n")
+            input("Press Enter to continue...")
+    
