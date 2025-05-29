@@ -2,13 +2,16 @@ from newspaper import Article
 from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 from re import split
 from random import randint
+import os
+import sys
+
 
 class Text_tagger ():
     def __init__(self, url, limit_counter=-1):
        
         self.url = url
         self.limit_counter = limit_counter
-        self.location = "./light_emotion_model"
+        self.location = self._get_resource_path("light_emotion_model")
 
         try:
 
@@ -26,7 +29,9 @@ class Text_tagger ():
                 "sadness" : ["low","slow","low"],
                 "neutral" : ["medium","medium","medium"],
                 "disgust" : ["low","slow","low"],
-                "surprise" : ["loud","fast","high"]
+                "surprise" : ["loud","fast","high"],
+                "amusement" : ["medium","fast","medium"],
+                "approval" : ["medium","fast","high"]
                 }
         
         try:
@@ -69,6 +74,16 @@ class Text_tagger ():
         return (title, phrases_list)
 
 
+    def _get_resource_path(self,relative_path):
+        """ Get absolute path to resource whether running as script or bundled exe """
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS  # PyInstaller extracts to this temp dir
+        else:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
+
+
     def _process_information(self):
         """Extract and return tokenized text with apropriate labels
 
@@ -80,7 +95,7 @@ class Text_tagger ():
         title, text_lst = self._extract_information()
         #prepare classifier
         classifier = pipeline("text-classification", model=self.model, tokenizer=self.tokenizer)
-
+        result_txt=""
         # add a the title as the name of the file and the first part of the output text
         if title:
             result_txt = title+"\n\n"
@@ -106,7 +121,7 @@ class Text_tagger ():
 
             counter +=1
 
-            if counter >= self.limit_counter:
+            if self.limit_counter and counter >= self.limit_counter:
                 return result_txt
 
         return result_txt
@@ -118,8 +133,11 @@ class Text_tagger ():
         Raises:
             RuntimeError: Error in case of failure
         """
+        if self.title: file_name = self.title + ".txt"
+        else: file_name = "Transcript.txt"
+
         try:
-            with open(self.title, "w", encoding="utf-8") as file:
+            with open(file_name, "w", encoding="utf-8") as file:
                 file.write(self.labeled_text)
         except Exception as e:
             raise RuntimeError(f"Text classification failed {e}")
@@ -128,10 +146,8 @@ if __name__ == "__main__":
     while True:
         try:
             url =  input("[+] Please paste the url of the website to scrap:\n->")
-            limit = int(input("[+] Limit? (None is default)\n->"))
 
-            if not limit or limit < 0:
-                limit = -1
+            limit = None
 
             print("[+] Begining Process...")
 
